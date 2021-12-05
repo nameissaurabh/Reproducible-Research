@@ -1,0 +1,73 @@
+---
+title: "Reproducible Research Assignment W2"
+author: "Saurabh Ghadge"
+date: "December 5, 2021"
+output: html_document
+---
+
+#### 1) Reading Data
+```{r}
+data <- read.csv("repdata_data_activity/activity.csv")
+head(data,5)
+```
+
+#### 2)Histogram of the total number of steps taken each day
+```{r}
+library(tidyverse)
+data2 <- data %>% group_by(date) %>% summarize(tot_steps = sum(steps,na.rm=TRUE))
+ggplot(data=data2)+geom_histogram(mapping = aes(x = tot_steps),na.rm=TRUE)
+```
+
+#### 3)Mean and median number of steps taken each day
+
+```{r}
+data3 <- data %>% group_by(date) %>% 
+        summarise(mean_steps = mean(steps,na.rm = TRUE),
+                  med_steps = median(steps,na.rm = TRUE))
+data3
+```
+
+#### 4)Time series plot of the average number of steps taken
+```{r}
+data3$date <- as.Date(data3$date)
+ggplot(data=data3,mapping = aes(x=date,y=mean_steps))+geom_line(na.rm=TRUE)
+```
+
+#### 5)The 5-minute interval that, on average, contains the maximum number of steps
+```{r}
+data4 <- data %>% group_by(interval) %>% 
+        summarise(max_steps = max(steps,na.rm=TRUE))
+```
+
+#### 6)Code to describe and show a strategy for imputing missing data
+```{r}
+any(is.na(data$steps))
+
+```
+```{r}
+data$steps[which(is.na(data$steps))] <- mean(data$steps,na.rm=TRUE)
+any(is.na(data$steps))
+```
+
+#### 7)Histogram of the total number of steps taken each day after missing values are imputed
+```{r}
+data5 <- data %>% group_by(date) %>% summarize(tot_steps = sum(steps))
+```
+
+#### 8)Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+```{r warning=FALSE}
+#making data weekend and weekdays wise
+data$days <- weekdays(as.Date(data$date))
+weekend <- grep("Saturday|Sunday",
+                data$days,ignore.case = TRUE)
+weekend_data <- data[weekend,]
+weekend_data$weekday <- "weekend"
+weekday_data <- subset(data,data$days != weekend)
+weekday_data$weekday <- "weekday"
+weekend_day <- rbind(weekend_data,weekday_data)
+# for plotting
+data7 <- weekend_day %>% group_by(interval,weekday) %>% summarize(mean_steps=mean(steps))
+ggplot(data7,mapping = aes(x=interval,y=mean_steps))+geom_point()+facet_grid(weekday~.)
+```
+
